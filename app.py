@@ -70,3 +70,4 @@ if submitted and text_input.strip():
 st.write("---")
 st.write("**Model:** [facebook/mms-tts-eng](https://huggingface.co/facebook/mms-tts-eng) • **Transformers** by [Hugging Face](https://github.com/huggingface/transformers)")
 
+# transformers==4.26.1
