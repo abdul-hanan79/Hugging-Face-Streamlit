@@ -1,8 +1,9 @@
 import streamlit as st
 import torch
 import io
-import soundfile as sf
 from transformers import AutoTokenizer, AutoModelForTextToWaveform
+import wave
+import numpy as np
 
 # 1. Page Config & Title
 st.set_page_config(page_title="Text To Speech | Abdul Hanan", page_icon=":microphone:", layout="centered")
@@ -42,32 +43,36 @@ if submitted and text_input.strip():
         # Prepare inputs
         inputs = tokenizer(text_input, return_tensors="pt")
 
-        # IMPORTANT: MMS TTS uses forward pass, NOT `.generate()`
-        # The output object should contain the waveform
+        # MMS TTS uses forward pass, NOT `.generate()`
         with torch.no_grad():
             outputs = model(**inputs)
         
-        # According to Hugging Face docs, outputs may have the key `.waveform`
-        # Check the shape or dictionary to confirm:
-        # waveforms = outputs.waveform  # or outputs["waveform"] if dict-like
         waveforms = getattr(outputs, "waveform", None)
         if waveforms is None:
             st.error("No waveform found in model output. Check model documentation.")
         else:
-            # waveforms is typically [1, num_samples], so squeeze to 1D
+            # waveforms is typically [1, num_samples]
             waveforms = waveforms.squeeze(0).cpu().numpy()
 
-            # Write the waveform to an in-memory WAV
+            # Write the waveform to an in-memory WAV using the standard library
             sample_rate = 16000  # MMS TTS typically uses 16kHz
             wav_buffer = io.BytesIO()
-            sf.write(wav_buffer, waveforms, sample_rate, format="WAV")
+
+            # Convert float waveform to 16-bit integer PCM for WAV
+            # scale from [-1,1] to int16
+            pcm_16 = np.int16(waveforms * 32767)
+
+            with wave.open(wav_buffer, 'wb') as wf:
+                wf.setnchannels(1)            # mono
+                wf.setsampwidth(2)           # 16-bit
+                wf.setframerate(sample_rate)
+                wf.writeframes(pcm_16.tobytes())
+
             wav_buffer.seek(0)
-        
+
             st.balloons()
             st.success("Speech generated successfully!")
             st.audio(wav_buffer, format="audio/wav")
 
 st.write("---")
 st.write("**Model:** [facebook/mms-tts-eng](https://huggingface.co/facebook/mms-tts-eng) • **Transformers** by [Hugging Face](https://github.com/huggingface/transformers)")
-
-# transformers==4.26.1
