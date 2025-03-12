@@ -4,7 +4,7 @@ import io
 from transformers import AutoTokenizer, AutoModelForTextToWaveform
 import wave
 import numpy as np
-
+st.write("NumPy version:", np.__version__)
 # 1. Page Config & Title
 st.set_page_config(page_title="Text To Speech | Abdul Hanan", page_icon=":microphone:", layout="centered")
 st.title("Facebook MMS TTS (VitsModel) by Abdul Hanan ")
